@@ -121,8 +121,8 @@ def is_reasoning_model(model: str) -> bool:
     return name.startswith("gpt-5") or name.startswith("gpt-6")
 
 
-def normalize_azure_api_settings(api_base: str, api_version: str) -> tuple[str, str]:
-    """Adjust APIM-style /openai bases for Azure deployment routing."""
+def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[str, str]:
+    """Adjust Azure APIM /openai bases for LiteLLM deployment routing."""
     parsed = urlsplit(api_base)
     host = parsed.netloc.lower()
     path = parsed.path.rstrip("/")
@@ -130,11 +130,14 @@ def normalize_azure_api_settings(api_base: str, api_version: str) -> tuple[str, 
 
     # Root resource endpoints such as https://host have no path segment to strip
     # and already match LiteLLM's default Foundry v1 routing.
-    # APIM azure-api.net endpoints that already include the /openai path need
-    # LiteLLM's legacy deployment routing so the final path is
+    # Azure APIM endpoints that already include the /openai path need LiteLLM's
+    # legacy deployment routing so the final path is
     # /openai/deployments/{deployment}/...
     if (
-        (host == "azure-api.net" or host.endswith(".azure-api.net"))
+        (
+            host == "azure-api.net"
+            or host.endswith((".azure-api.net", ".azure-api.us", ".azure-api.cn"))
+        )
         and api_version.lower() in {"preview", "v1", "latest"}
         and path_parts
         and path_parts[-1].lower() == "openai"
@@ -576,7 +579,7 @@ def convert_anthropic_to_litellm(request: MessagesRequest) -> Dict[str, Any]:
 
     litellm_request["api_key"] = AZURE_API_KEY if USE_AZURE else OPENAI_API_KEY
     if USE_AZURE:
-        api_base, api_version = normalize_azure_api_settings(
+        api_base, api_version = resolve_azure_deployment_routing(
             AZURE_API_BASE, AZURE_API_VERSION
         )
         litellm_request["api_base"] = api_base
