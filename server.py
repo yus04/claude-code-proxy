@@ -200,7 +200,7 @@ class SystemContent(BaseModel):
 
 
 class Message(BaseModel):
-    role: Literal["user", "assistant"]
+    role: Literal["user", "assistant", "system"]
     content: Union[str, List[ContentBlock]]
 
 
@@ -211,7 +211,7 @@ class Tool(BaseModel):
 
 
 class ThinkingConfig(BaseModel):
-    type: Optional[Literal["enabled", "disabled"]] = "enabled"
+    type: Optional[Literal["enabled", "disabled", "adaptive"]] = "enabled"
     budget_tokens: Optional[int] = None
 
     @property
@@ -456,11 +456,11 @@ def convert_messages(
                 if tool_calls:
                     assistant_message["tool_calls"] = tool_calls
                 openai_messages.append(assistant_message)
-        elif text_parts:
+        elif message.role in ("user", "system") and text_parts:
             only_text = all(part["type"] == "text" for part in text_parts)
             openai_messages.append(
                 {
-                    "role": "user",
+                    "role": message.role,
                     "content": "\n".join(part["text"] for part in text_parts)
                     if only_text
                     else text_parts,
