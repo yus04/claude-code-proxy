@@ -124,15 +124,18 @@ def is_reasoning_model(model: str) -> bool:
 def normalize_azure_api_settings(api_base: str, api_version: str) -> tuple[str, str]:
     """Adjust APIM-style /openai bases for Azure deployment routing."""
     parsed = urlsplit(api_base)
+    host = parsed.netloc.lower()
     path = parsed.path.rstrip("/")
     path_parts = [part for part in path.split("/") if part]
 
     # Root resource endpoints such as https://host have no path segment to strip
     # and already match LiteLLM's default Foundry v1 routing.
-    # APIM endpoints that already include the /openai path need LiteLLM's legacy
-    # deployment routing so the final path is /openai/deployments/{deployment}/...
+    # APIM azure-api.net endpoints that already include the /openai path need
+    # LiteLLM's legacy deployment routing so the final path is
+    # /openai/deployments/{deployment}/...
     if (
-        api_version.lower() in {"preview", "v1", "latest"}
+        (host == "azure-api.net" or host.endswith(".azure-api.net"))
+        and api_version.lower() in {"preview", "v1", "latest"}
         and path_parts
         and path_parts[-1].lower() == "openai"
     ):
