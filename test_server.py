@@ -536,7 +536,8 @@ def test_upstream_errors_use_anthropic_error_format(monkeypatch, client):
     )
 
     assert response.status_code == 429
-    assert response.json() == {
-        "type": "error",
-        "error": {"type": "rate_limit_error", "message": "rate limited"},
-    }
+    body = response.json()
+    assert body["type"] == "error"
+    assert body["error"]["type"] == "rate_limit_error"
+    # Upstream error details stay in the proxy log.
+    assert "rate limited" not in body["error"]["message"]

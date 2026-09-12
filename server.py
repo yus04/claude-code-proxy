@@ -760,13 +760,16 @@ async def handle_streaming(response_generator, request: MessagesRequest):
         )
         yield sse("message_stop", {"type": "message_stop"})
 
-    except Exception as exc:  # pragma: no cover - network failures
+    except Exception:  # pragma: no cover - network failures
         logger.exception("Error while streaming response")
         yield sse(
             "error",
             {
                 "type": "error",
-                "error": {"type": "api_error", "message": str(exc)},
+                "error": {
+                    "type": "api_error",
+                    "message": "The upstream stream failed. See the proxy logs for details.",
+                },
             },
         )
 
@@ -777,7 +780,12 @@ async def handle_streaming(response_generator, request: MessagesRequest):
 
 
 def error_response(exc: Exception) -> JSONResponse:
-    """Return an Anthropic style error payload."""
+    """Return an Anthropic style error payload.
+
+    The upstream exception is only written to the proxy log: error messages
+    coming from the backend may contain internal details, so the client gets a
+    generic message with the status code preserved.
+    """
     status_code = int(getattr(exc, "status_code", 500) or 500)
     if status_code < 400 or status_code > 599:
         status_code = 500
@@ -787,16 +795,23 @@ def error_response(exc: Exception) -> JSONResponse:
         401: "authentication_error",
         403: "permission_error",
         404: "not_found_error",
+        413: "request_too_large",
         429: "rate_limit_error",
     }
-    logger.error(f"Request failed ({status_code}): {exc}")
+    error_type = error_types.get(status_code, "api_error")
+
+    logger.error(f"Request failed ({status_code}): {exc}", exc_info=True)
+
     return JSONResponse(
         status_code=status_code,
         content={
             "type": "error",
             "error": {
-                "type": error_types.get(status_code, "api_error"),
-                "message": str(exc),
+                "type": error_type,
+                "message": (
+                    f"The upstream request failed with status {status_code}. "
+                    "See the proxy logs for details."
+                ),
             },
         },
     )
