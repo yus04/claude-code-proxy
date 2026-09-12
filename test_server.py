@@ -346,7 +346,7 @@ def test_azure_base_without_openai_suffix_is_not_normalized(monkeypatch):
     assert api_version == "preview"
 
 
-def test_non_apim_openai_suffix_is_not_normalized(monkeypatch):
+def test_absolute_openai_suffix_is_normalized(monkeypatch):
     monkeypatch.setattr(server, "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview")
 
     api_base, api_version = server.resolve_azure_deployment_routing(
@@ -354,8 +354,8 @@ def test_non_apim_openai_suffix_is_not_normalized(monkeypatch):
         "preview",
     )
 
-    assert api_base == "https://example.services.ai.azure.com/proxy/openai"
-    assert api_version == "preview"
+    assert api_base == "https://example.services.ai.azure.com/proxy"
+    assert api_version == "2025-02-01-preview"
 
 
 def test_relative_apim_base_is_not_normalized(monkeypatch):
