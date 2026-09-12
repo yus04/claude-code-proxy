@@ -81,6 +81,7 @@ AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "preview")
 AZURE_DEPLOYMENT_API_VERSION = os.environ.get(
     "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview"
 )
+AZURE_V1_STYLE_API_VERSIONS = {"preview", "v1", "latest"}
 
 # Fallback: plain OpenAI (or any other OpenAI compatible endpoint).
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -122,23 +123,27 @@ def is_reasoning_model(model: str) -> bool:
 
 
 def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[str, str]:
-    """Adjust Azure APIM /openai bases for LiteLLM deployment routing."""
+    """Adjust absolute Azure APIM /openai bases for LiteLLM deployment routing."""
     parsed = urlsplit(api_base)
+    is_absolute_url = bool(parsed.scheme and parsed.netloc)
     host = parsed.netloc.lower()
     path = parsed.path.rstrip("/")
     path_parts = [part for part in path.split("/") if part]
 
+    # Malformed values without a scheme/host are passed through so LiteLLM can
+    # surface the same configuration error it would have raised before.
     # Root resource endpoints such as https://host have no path segment to strip
     # and already match LiteLLM's default Foundry v1 routing.
     # Azure APIM endpoints that already include the /openai path need LiteLLM's
     # legacy deployment routing so the final path is
     # /openai/deployments/{deployment}/...
     if (
-        (
+        is_absolute_url
+        and (
             host == "azure-api.net"
             or host.endswith((".azure-api.net", ".azure-api.us", ".azure-api.cn"))
         )
-        and api_version.lower() in {"preview", "v1", "latest"}
+        and api_version.lower() in AZURE_V1_STYLE_API_VERSIONS
         and path_parts
         and path_parts[-1].lower() == "openai"
     ):
