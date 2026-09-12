@@ -109,6 +109,7 @@ Claude Code が送るモデル名は、ファミリー名（opus / sonnet / haik
 | `AZURE_API_BASE` | （未設定） | Foundry リソースのエンドポイント。設定すると Foundry 経由になります（`/openai/v1` は不要） |
 | `AZURE_API_KEY` | （未設定） | Foundry リソースの API キー |
 | `AZURE_API_VERSION` | `preview` | `preview` / `v1` / `latest` は OpenAI 互換の v1 API を使用。従来のデプロイ API を使う場合のみ `2025-02-01-preview` などの日付値を指定 |
+| `AZURE_DEPLOYMENT_API_VERSION` | `2025-02-01-preview` | `AZURE_API_BASE` が APIM の `/openai` で終わる場合に、`/openai/deployments/{deployment}/chat/completions` へ投げるために使う API バージョン |
 | `OPENAI_API_KEY` | （未設定） | OpenAI（または他の OpenAI 互換エンドポイント）の API キー |
 | `OPENAI_BASE_URL` | `https://api.openai.com/v1` | OpenAI 互換エンドポイントの URL |
 | `BIG_MODEL` / `MIDDLE_MODEL` / `SMALL_MODEL` | `gpt-5` / `gpt-5` / `gpt-5-mini` | opus / sonnet / haiku のマッピング先 |

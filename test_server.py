@@ -298,6 +298,30 @@ def test_azure_credentials_are_attached(monkeypatch):
     assert payload["api_version"] == "preview"
 
 
+def test_azure_apim_openai_base_uses_deployment_path(monkeypatch):
+    monkeypatch.setattr(server, "USE_AZURE", True)
+    monkeypatch.setattr(
+        server,
+        "AZURE_API_BASE",
+        "https://jpe-apim-platform.azure-api.net/foundry/openai",
+    )
+    monkeypatch.setattr(server, "AZURE_API_KEY", "test-key")
+    monkeypatch.setattr(server, "AZURE_API_VERSION", "preview")
+    monkeypatch.setattr(server, "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview")
+
+    payload = server.convert_anthropic_to_litellm(
+        server.MessagesRequest(
+            model="claude-sonnet-5",
+            max_tokens=100,
+            messages=[{"role": "user", "content": "hi"}],
+        )
+    )
+
+    assert payload["model"] == "azure/gpt-5"
+    assert payload["api_base"] == "https://jpe-apim-platform.azure-api.net/foundry"
+    assert payload["api_version"] == "2025-02-01-preview"
+
+
 # --------------------------------------------------------------------------- #
 # OpenAI -> Anthropic conversion
 # --------------------------------------------------------------------------- #

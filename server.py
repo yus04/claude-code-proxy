@@ -13,6 +13,7 @@ import sys
 import time
 import uuid
 from typing import Any, Dict, List, Literal, Optional, Union
+from urllib.parse import urlsplit, urlunsplit
 
 import litellm
 import uvicorn
@@ -77,6 +78,12 @@ AZURE_API_KEY = os.environ.get("AZURE_API_KEY")
 # A dated value such as 2025-02-01-preview selects the legacy deployment API.
 AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "preview")
 
+# APIM endpoints that already include the /openai path need LiteLLM's legacy
+# deployment routing so the final path is /openai/deployments/{deployment}/...
+AZURE_DEPLOYMENT_API_VERSION = os.environ.get(
+    "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview"
+)
+
 # Fallback: plain OpenAI (or any other OpenAI compatible endpoint).
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL")
@@ -114,6 +121,28 @@ def is_reasoning_model(model: str) -> bool:
     if name.startswith("gpt-5-chat") or name.startswith("gpt-5.1-chat"):
         return False
     return name.startswith("gpt-5") or name.startswith("gpt-6")
+
+
+def normalize_azure_api_settings(api_base: str, api_version: str) -> tuple[str, str]:
+    """Adjust APIM-style /openai bases for Azure deployment routing."""
+    parsed = urlsplit(api_base)
+    path = parsed.path.rstrip("/")
+    if (
+        api_version.lower() in {"preview", "v1", "latest"}
+        and path.lower().endswith("/openai")
+    ):
+        parent_path = path[: -len("/openai")] or "/"
+        normalized = urlunsplit(
+            (
+                parsed.scheme,
+                parsed.netloc,
+                parent_path.rstrip("/"),
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+        return normalized.rstrip("/"), AZURE_DEPLOYMENT_API_VERSION
+    return api_base, api_version
 
 
 # --------------------------------------------------------------------------- #
@@ -539,8 +568,11 @@ def convert_anthropic_to_litellm(request: MessagesRequest) -> Dict[str, Any]:
 
     litellm_request["api_key"] = AZURE_API_KEY if USE_AZURE else OPENAI_API_KEY
     if USE_AZURE:
-        litellm_request["api_base"] = AZURE_API_BASE
-        litellm_request["api_version"] = AZURE_API_VERSION
+        api_base, api_version = normalize_azure_api_settings(
+            AZURE_API_BASE, AZURE_API_VERSION
+        )
+        litellm_request["api_base"] = api_base
+        litellm_request["api_version"] = api_version
     elif OPENAI_BASE_URL:
         litellm_request["api_base"] = OPENAI_BASE_URL
 
