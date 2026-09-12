@@ -322,6 +322,30 @@ def test_azure_apim_openai_base_uses_deployment_path(monkeypatch):
     assert payload["api_version"] == "2025-02-01-preview"
 
 
+def test_azure_openai_base_with_dated_version_is_not_normalized(monkeypatch):
+    monkeypatch.setattr(server, "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview")
+
+    api_base, api_version = server.normalize_azure_api_settings(
+        "https://jpe-apim-platform.azure-api.net/foundry/openai",
+        "2026-01-01-preview",
+    )
+
+    assert api_base == "https://jpe-apim-platform.azure-api.net/foundry/openai"
+    assert api_version == "2026-01-01-preview"
+
+
+def test_azure_base_without_openai_suffix_is_not_normalized(monkeypatch):
+    monkeypatch.setattr(server, "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview")
+
+    api_base, api_version = server.normalize_azure_api_settings(
+        "https://jpe-apim-platform.azure-api.net/foundry",
+        "preview",
+    )
+
+    assert api_base == "https://jpe-apim-platform.azure-api.net/foundry"
+    assert api_version == "preview"
+
+
 # --------------------------------------------------------------------------- #
 # OpenAI -> Anthropic conversion
 # --------------------------------------------------------------------------- #
