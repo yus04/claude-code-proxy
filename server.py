@@ -81,6 +81,7 @@ AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "preview")
 AZURE_DEPLOYMENT_API_VERSION = os.environ.get(
     "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview"
 )
+# Keep this in sync with README.md and .env.example descriptions of AZURE_API_VERSION.
 AZURE_V1_STYLE_API_VERSIONS = {"preview", "v1", "latest"}
 
 # Fallback: plain OpenAI (or any other OpenAI compatible endpoint).
@@ -127,6 +128,7 @@ def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[s
 
     This preserves root resource endpoints for v1 routing, but an absolute base
     that already ends in an /openai path is treated as the deployment API prefix.
+    Non-absolute values are passed through unchanged and must be fixed in config.
     """
     parsed = urlsplit(api_base)
     is_absolute_url = bool(parsed.scheme and parsed.netloc)
