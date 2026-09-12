@@ -103,6 +103,23 @@ def test_system_prompt_as_content_blocks():
     assert messages[0] == {"role": "system", "content": "line one\n\nline two"}
 
 
+def test_embedded_system_message_is_converted():
+    messages = server.convert_messages(
+        [
+            server.Message(
+                role="system",
+                content=[{"type": "text", "text": "You are helpful"}],
+            ),
+            server.Message(role="user", content="hi"),
+        ]
+    )
+
+    assert messages == [
+        {"role": "system", "content": "You are helpful"},
+        {"role": "user", "content": "hi"},
+    ]
+
+
 def test_tool_use_is_converted_to_tool_calls():
     messages = server.convert_messages(
         [
@@ -404,7 +421,14 @@ def test_create_message(monkeypatch, client):
         json={
             "model": "claude-sonnet-5",
             "max_tokens": 100,
-            "messages": [{"role": "user", "content": "Capital of France?"}],
+            "thinking": {"type": "adaptive"},
+            "messages": [
+                {
+                    "role": "system",
+                    "content": [{"type": "text", "text": "Answer concisely."}],
+                },
+                {"role": "user", "content": "Capital of France?"},
+            ],
         },
     )
 
@@ -413,6 +437,10 @@ def test_create_message(monkeypatch, client):
     assert body["content"] == [{"type": "text", "text": "Paris"}]
     assert body["model"] == "claude-sonnet-5"
     assert captured["model"] == "openai/gpt-5"
+    assert captured["messages"][0] == {
+        "role": "system",
+        "content": "Answer concisely.",
+    }
 
 
 def test_create_message_streaming(monkeypatch, client):
