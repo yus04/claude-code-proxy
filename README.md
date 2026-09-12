@@ -56,10 +56,11 @@ AZURE_API_KEY="<your-foundry-api-key>"
 
 Azure OpenAI deployment endpoints, including APIM endpoints such as
 `https://<gateway>.azure-api.net/foundry/openai/deployments/<deployment>/chat/completions`,
-use the endpoint's base path and its specified API version:
+need the path preceding `/openai`. LiteLLM adds
+`/openai/deployments/<deployment>/chat/completions` itself:
 
 ```dotenv
-AZURE_API_BASE="https://<gateway>.azure-api.net/foundry/openai"
+AZURE_API_BASE="https://<gateway>.azure-api.net/foundry"
 AZURE_API_KEY="<your-api-key>"
 AZURE_API_VERSION="2025-03-01-preview"
 ```
