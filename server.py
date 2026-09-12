@@ -128,10 +128,12 @@ def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[s
 
     This preserves root resource endpoints for v1 routing, but an absolute base
     that already ends in an /openai path is treated as the deployment API prefix.
+    Dated API versions are already deployment-style and are left unchanged.
     Non-absolute values are passed through unchanged and must be fixed in config.
     """
     parsed = urlsplit(api_base)
     is_absolute_url = bool(parsed.scheme and parsed.netloc)
+    is_v1_style_version = api_version.lower() in AZURE_V1_STYLE_API_VERSIONS
     path = parsed.path.rstrip("/")
     path_parts = [part for part in path.split("/") if part]
 
@@ -144,7 +146,7 @@ def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[s
     # /openai/deployments/{deployment}/...
     if (
         is_absolute_url
-        and api_version.lower() in AZURE_V1_STYLE_API_VERSIONS
+        and is_v1_style_version
         and path_parts
         and path_parts[-1].lower() == "openai"
     ):
