@@ -78,8 +78,6 @@ AZURE_API_KEY = os.environ.get("AZURE_API_KEY")
 # A dated value such as 2025-02-01-preview selects the legacy deployment API.
 AZURE_API_VERSION = os.environ.get("AZURE_API_VERSION", "preview")
 
-# APIM endpoints that already include the /openai path need LiteLLM's legacy
-# deployment routing so the final path is /openai/deployments/{deployment}/...
 AZURE_DEPLOYMENT_API_VERSION = os.environ.get(
     "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview"
 )
@@ -127,9 +125,14 @@ def normalize_azure_api_settings(api_base: str, api_version: str) -> tuple[str, 
     """Adjust APIM-style /openai bases for Azure deployment routing."""
     parsed = urlsplit(api_base)
     path = parsed.path.rstrip("/")
+    path_parts = [part for part in path.split("/") if part]
+
+    # APIM endpoints that already include the /openai path need LiteLLM's legacy
+    # deployment routing so the final path is /openai/deployments/{deployment}/...
     if (
         api_version.lower() in {"preview", "v1", "latest"}
-        and path.lower().endswith("/openai")
+        and path_parts
+        and path_parts[-1].lower() == "openai"
     ):
         parent_path = path[: -len("/openai")] or "/"
         normalized = urlunsplit(
