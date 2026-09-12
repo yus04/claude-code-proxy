@@ -19,6 +19,11 @@ def client():
     return TestClient(server.app)
 
 
+@pytest.fixture(autouse=True)
+def use_openai_by_default(monkeypatch):
+    monkeypatch.setattr(server, "USE_AZURE", False)
+
+
 # --------------------------------------------------------------------------- #
 # Model mapping
 # --------------------------------------------------------------------------- #
