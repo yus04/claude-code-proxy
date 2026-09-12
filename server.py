@@ -82,6 +82,7 @@ AZURE_DEPLOYMENT_API_VERSION = os.environ.get(
     "AZURE_DEPLOYMENT_API_VERSION", "2025-02-01-preview"
 )
 AZURE_V1_STYLE_API_VERSIONS = {"preview", "v1", "latest"}
+AZURE_APIM_HOST_SUFFIXES = ("azure-api.net", "azure-api.us", "azure-api.cn")
 
 # Fallback: plain OpenAI (or any other OpenAI compatible endpoint).
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -127,6 +128,10 @@ def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[s
     parsed = urlsplit(api_base)
     is_absolute_url = bool(parsed.scheme and parsed.netloc)
     host = parsed.netloc.lower()
+    is_apim_host = any(
+        host == suffix or host.endswith(f".{suffix}")
+        for suffix in AZURE_APIM_HOST_SUFFIXES
+    )
     path = parsed.path.rstrip("/")
     path_parts = [part for part in path.split("/") if part]
 
@@ -139,10 +144,7 @@ def resolve_azure_deployment_routing(api_base: str, api_version: str) -> tuple[s
     # /openai/deployments/{deployment}/...
     if (
         is_absolute_url
-        and (
-            host == "azure-api.net"
-            or host.endswith((".azure-api.net", ".azure-api.us", ".azure-api.cn"))
-        )
+        and is_apim_host
         and api_version.lower() in AZURE_V1_STYLE_API_VERSIONS
         and path_parts
         and path_parts[-1].lower() == "openai"
